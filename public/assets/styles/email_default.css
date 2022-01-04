@@ -1,0 +1,16 @@
+.default {
+  width: 40rem;
+  background-color: #faedc6;
+  font-family: "Source Sans Pro";
+  font-size: 1rem;
+  height: 100%;
+}
+.btn-redirect {
+  width: 100%;
+  height: fit-content;
+  background-color: #7cd1b8;
+  transition: background-color 100ms;
+}
+.btn-redirect:hover {
+  background-color: #52bda7;
+}
