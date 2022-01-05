@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\SumUtangModel;
 use App\Models\UtangModel;
 use CodeIgniter\API\ResponseTrait;
+use CodeIgniter\HTTP\URI;
 use CodeIgniter\I18n\Time;
 use Config\Database;
 use Firebase\JWT\JWT;
@@ -26,14 +27,16 @@ class UtangController extends BaseController
         $this->listUtangBuilder = db_connect()->table('daftar_ngutang');
         $this->sumUtangBuilder = db_connect()->table('sum_ngutang');
     }
-    public function index()
+    public function index($pages = 1)
     {
         $header = $this->request->getServer('HTTP_AUTHORIZATION');
         $token = explode(' ', $header)[1];
         $decoded = JWT::decode($token, getenv('SECRET_KEY_JWT'), ['HS256']);
         $user = $decoded->data->username;
         try {
-            $tempUtang = $this->sumUtangBuilder->where('username1', $user)->orWhere('username2', $user)->orderBy('updated_at', 'DESC')->limit(5)->get()->getResultArray();
+            $countUtang = $this->sumUtangBuilder->where('username1', $user)->orWhere('username2', $user)->countAllResults();
+            $offset = ($pages - 1) * 5;
+            $tempUtang = $this->sumUtangBuilder->where('username1', $user)->orWhere('username2', $user)->orderBy('updated_at', 'DESC')->limit(5, $offset)->get()->getResultArray();
             $dataUtang = $tempUtang;
             $tempindex = 0;
             foreach ($tempUtang as $temp) {
@@ -44,7 +47,10 @@ class UtangController extends BaseController
                 }
                 $tempindex += 1;
             }
-            $res = $dataUtang;
+            $res = [
+                "maxPage" => floor($countUtang / 5) + 1,
+                "data" => $dataUtang
+            ];
             // $dataUtang1 = $this->sumUtang->where('username1', $user)->findAll();
             // $tempUtang2 = $this->sumUtang->where('username2', $user)->findAll();
             // $dataUtang2 = $tempUtang2;
@@ -148,6 +154,7 @@ class UtangController extends BaseController
 
     public function userTransaction($user2)
     {
+
         $header = $this->request->getServer('HTTP_AUTHORIZATION');
         $decoded = getHeaderJWT($header);
         $user = $decoded->data->username;
@@ -172,12 +179,19 @@ class UtangController extends BaseController
     }
     public function historyUser($user2)
     {
+        $req = $this->request;
+        $pages = 1;
+        if ($req->getGet('pages')) {
+            $pages = $req->getGet('pages');
+        }
         $header = $this->request->getServer('HTTP_AUTHORIZATION');
         $decoded = getHeaderJWT($header);
         $user = $decoded->data->username;
         $where = "(username1 = '$user' and username2='$user2') or (username1 = '$user2' and username2='$user')";
         try {
-            $tempUtang = $this->listUtangBuilder->where($where)->orderBy('updated_at', 'DESC')->limit(5)->get()->getResultArray();
+            $countUtang = $this->listUtangBuilder->where($where)->countAllResults();
+            $offset = ($pages - 1) * 5;
+            $tempUtang = $this->listUtangBuilder->where($where)->orderBy('updated_at', 'DESC')->limit(5, $offset)->get()->getResultArray();
             if (count($tempUtang)) {
                 $dataUtang = $tempUtang;
                 $tempindex = 0;
@@ -189,7 +203,10 @@ class UtangController extends BaseController
                     }
                     $tempindex += 1;
                 }
-                $res = $dataUtang;
+                $res = [
+                    "maxPage" => floor($countUtang / 5) + 1,
+                    "data" => $dataUtang
+                ];
                 return $this->setResponseFormat('json')->respondCreated($res);
             } else {
                 $this->fail("user tidak ditemukan");

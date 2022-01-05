@@ -41,6 +41,7 @@ $routes->group("", ['filter' => 'auth'], function ($routes) {
     $routes->get('/history/(:alphanum)', 'UtangController::historyUser/$1');
     $routes->get('/transaction', 'UtangController::index');
     $routes->post('/transaction/add', 'UtangController::add');
+    $routes->get('/transaction/pages/(:num)', 'UtangController::index/$1');
     $routes->get('/transaction/(:alphanum)', 'UtangController::userTransaction/$1');
     $routes->get('/member', 'UserController::index');
     $routes->post('/notify-bill', 'EmailController::notifybill');
